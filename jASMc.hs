@@ -3,6 +3,7 @@ import qualified Data.List.Split as Split
 import qualified Data.Char as Char
 import Data.Bits
 import Data.Word
+--import qualified Data.Binary.Get as Get
 
 data Register = Register {regId :: Integer}  deriving (Show,Eq) 
 data Command = Command {cmdId :: Integer} deriving (Show,Eq) 
@@ -70,11 +71,33 @@ checkAsmIsPointer = isInteger
 checkAsmIsRegister :: String -> Bool
 checkAsmIsRegister s = (getRegIdByStr s) >= 0
 
+
+--encodeWord16toWord8 :: Word16 -> [Word8]
+--encodeWord16toWord8 x = map fromIntegral [Get.getByte 1 x, Get.getByte 2 x]
+
+word8toWord32 :: Word8 -> Word32
+word8toWord32 x = fromIntegral x
+
+--word32FromWord8 :: Word8 -> Word32
+--word32FromWord8 a = ((fromIntegral a) `shiftL` 24 + (fromIntegral 0) `shiftL` 16 + (fromIntegral 0) `shiftL` 8 + (fromIntegral 0))
+
 asmAddCmd :: Word8 -> Word32
-asmAddCmd cmd = shiftL (Word32 cmd) 18
+asmAddCmd cmd = (word8toWord32 (cmd .&. 63)) `shiftL` 18 
+
+-- boolean true: small Info
+-- boolean false: big Info
+asmAddInfo :: Word32 -> Word8 -> Bool -> Word32
+asmAddInfo bin info false = bin .|. (word8toWord32 ((info .&. 6)) `shiftL` 15)
+asmAddInfo bin info true = bin .|. (word8toWord32 ((info .&. 7)) `shiftL` 15)
+
+-- boolean true: small Info
+-- boolean false: big Info
+asmBuild :: Word8 -> Word8 -> Bool -> Word32
+asmBuild cmd info smallInfo = asmAddInfo (asmAddCmd cmd) info smallInfo
 
 -- extractData :: String -> Integer
 -- extractData s = extractCmdfromSplitted (splitOnBlanc s)
+
 
 main = do
     --putStrLn (show(extractCmd "asf sdf asf sdf"))
