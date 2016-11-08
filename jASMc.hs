@@ -55,12 +55,32 @@ getCmdIdByStr cmd = getCmdId (getCommand cmd)
 splitOnBlanc :: String -> [[Char]]
 splitOnBlanc str = Split.splitOn " " str
 
+
 extractCmdfromSplitted :: [[Char]] -> Integer
 extractCmdfromSplitted splitted = getCmdIdByStr (splitted !! 0)
 
-extractCmd :: String -> Integer
+extractCmd :: String -> Word8
 extractCmd s = extractCmdfromSplitted (splitOnBlanc s)
 
+--extractOneData pos register integer pointer = 
+extractOneData :: Integer -> Bool -> Bool -> Bool -> Word8
+extractOneData pos true false false = getRegIdByStr (splitted !! pos)
+extractOneData pos false true false = getAsmIntegerByString (splitted !! pos)
+extractOneData pos false false true = getAsmPointerByString (splitted !! pos)
+
+extractBigData :: Bool -> Bool -> Bool -> Word16
+extractOneData true false false = getRegIdByStr (splitted !! 1)
+extractOneData false true false = getAsmIntegerByString (splitted !! 1)
+extractOneData false false true = getAsmPointerByString (splitted !! 1)
+
+--Bool: Is2Values
+extractData :: String -> Bool -> Word16
+extractData s true = asmCombineValues 
+extractData s false = extractCmdfromSplitted (splitOnBlanc s)
+
+
+checkAsmIs2Values :: [[Char]] -> Bool
+checkAsmIs2Values splitted = (length splitted) == 3
 
 checkAsmIsInteger :: String -> Bool
 checkAsmIsInteger (x:xs) = x == '#' && isInteger xs
@@ -72,31 +92,35 @@ checkAsmIsRegister :: String -> Bool
 checkAsmIsRegister s = (getRegIdByStr s) >= 0
 
 
---encodeWord16toWord8 :: Word16 -> [Word8]
---encodeWord16toWord8 x = map fromIntegral [Get.getByte 1 x, Get.getByte 2 x]
+word8toWord16 :: Word8 -> Word16
+word8toWord16 x = fromIntegral x
 
 word8toWord32 :: Word8 -> Word32
 word8toWord32 x = fromIntegral x
 
---word32FromWord8 :: Word8 -> Word32
---word32FromWord8 a = ((fromIntegral a) `shiftL` 24 + (fromIntegral 0) `shiftL` 16 + (fromIntegral 0) `shiftL` 8 + (fromIntegral 0))
+word16toWord32 :: Word16 -> Word32
+word16toWord32 x = fromIntegral x
+
 
 asmAddCmd :: Word8 -> Word32
 asmAddCmd cmd = (word8toWord32 (cmd .&. 63)) `shiftL` 18 
 
--- boolean true: small Info
--- boolean false: big Info
-asmAddInfo :: Word32 -> Word8 -> Bool -> Word32
-asmAddInfo bin info false = bin .|. (word8toWord32 ((info .&. 6)) `shiftL` 15)
-asmAddInfo bin info true = bin .|. (word8toWord32 ((info .&. 7)) `shiftL` 15)
+asmAddInfo :: Word32 -> Word8 -> Word32
+asmAddInfo bin info = bin .|. (word8toWord32 ((info .&. 7)) `shiftL` 15)
 
--- boolean true: small Info
--- boolean false: big Info
-asmBuild :: Word8 -> Word8 -> Bool -> Word32
-asmBuild cmd info smallInfo = asmAddInfo (asmAddCmd cmd) info smallInfo
+asmAddValue :: Word32 -> Word16 -> Word32
+asmAddValue bin value = bin .|. (word16toWord32 ((value .&. 16383)))
 
--- extractData :: String -> Integer
--- extractData s = extractCmdfromSplitted (splitOnBlanc s)
+asmBuild :: Word8 -> Word8 -> Word16 -> Word32
+asmBuild cmd info value = asmAddValue (asmAddInfo (asmAddCmd cmd) info) value
+
+asmBuildFrom2val :: Word8 -> Word8 -> Word8 -> Word8 -> Word32
+asmBuildFrom2val cmd info valL valR = asmAddValue (asmAddInfo (asmAddCmd cmd) info) (asmCombineValues valL valR)
+
+asmCombineValues :: Word8 -> Word8 -> Word16
+asmCombineValues valL valR = ((word8toWord16 (valL)) `shiftL` 8) .|. word8toWord16 (valR)
+
+
 
 
 main = do
