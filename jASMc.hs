@@ -78,6 +78,11 @@ extractData :: String -> Bool -> Word16
 extractData s true = asmCombineValues 
 extractData s false = extractCmdfromSplitted (splitOnBlanc s)
 
+asmGetInteger :: [[Char]] -> Integer
+asmGetInteger (x:xs) = read xs :: Integer
+
+asmGetPointer :: [[Char]] -> Integer
+asmGetPointer x = read x :: Integer
 
 checkAsmIs2Values :: [[Char]] -> Bool
 checkAsmIs2Values splitted = (length splitted) == 3
