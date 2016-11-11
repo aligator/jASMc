@@ -3,10 +3,13 @@ import qualified Data.List.Split as Split
 import qualified Data.Char as Char
 import Data.Bits
 import Data.Word
+import Numeric
+
 --import qualified Data.Binary.Get as Get
 
 data Register = Register {regId :: Integer}  deriving (Show,Eq) 
 data Command = Command {cmdId :: Integer} deriving (Show,Eq) 
+data DataType = INT | REG | POINT deriving (Show, Eq)
 
 getRegister :: String -> Register
 getRegister "a" = Register 0
@@ -28,14 +31,17 @@ getRegister s = Register (-1)
 
 getCommand :: String -> Command
 getCommand "Ende" = Command 0
-getCommand "I++" = Command 2
+getCommand "Mov" = Command 1
+getCommand "MovDW" = Command 2
+getCommand "I++" = Command 3
+getCommand "I--" = Command 2
 getCommand "Print" = Command 8
 getCommand s = Command (-1)
 
 isInteger :: String -> Bool
 isInteger ""  = False
 isInteger "." = False
-isInteger xs  =
+isInteger (x:xs)  = (Char.isDigit x || x == '-') &&
   case dropWhile Char.isDigit xs of
     ""       -> True
     _        -> False
@@ -60,32 +66,46 @@ extractCmdfromSplitted :: [[Char]] -> Integer
 extractCmdfromSplitted splitted = getCmdIdByStr (splitted !! 0)
 
 extractCmd :: String -> Word8
-extractCmd s = extractCmdfromSplitted (splitOnBlanc s)
+extractCmd s = integerToWord8 (extractCmdfromSplitted (splitOnBlanc s))
 
---extractOneData pos register integer pointer = 
-extractOneData :: Integer -> Bool -> Bool -> Bool -> Word8
-extractOneData pos true false false = getRegIdByStr (splitted !! pos)
-extractOneData pos false true false = getAsmIntegerByString (splitted !! pos)
-extractOneData pos false false true = getAsmPointerByString (splitted !! pos)
+-- splitted(cmd1, cmd2) twoVal register integer pointer
+asmExtractData_ :: [[Char]] -> Bool -> Bool -> Bool -> Bool -> [Integer]
+asmExtractData_ splitted False False False True = [asmGetPointer (splitted !! 0)]
+asmExtractData_ splitted False False True False = [asmGetInteger (splitted !! 0)]
+asmExtractData_ splitted False True False False = [asmGetRegister (splitted !! 0)]
+asmExtractData_ splitted True False False True = [asmGetPointer (splitted !! 0),  (asmExtractData (splitted)) !! 0] 
+asmExtractData_ splitted True False True False = [asmGetInteger (splitted !! 0), (asmExtractData (splitted)) !! 0]
+asmExtractData_ splitted True True False False = [asmGetRegister (splitted !! 0), (asmExtractData (splitted)) !! 0]
+asmExtractData_ splitted two reg integer pointer = error ("asmExtractData: ungültige Kombination: data1: " ++ splitted!!0 ++ " data2: " ++ splitted!!1 ++ " two: " ++ show two ++ " reg: " ++ show reg ++ " int: " ++ show integer ++ " pointer: " ++ show pointer)
 
-extractBigData :: Bool -> Bool -> Bool -> Word16
-extractOneData true false false = getRegIdByStr (splitted !! 1)
-extractOneData false true false = getAsmIntegerByString (splitted !! 1)
-extractOneData false false true = getAsmPointerByString (splitted !! 1)
+asmExtractData :: [[Char]] -> [Integer]
+asmExtractData (x:xs) = asmExtractData_ xs (checkAsmIs2Values xs) (checkAsmIsRegister (xs!!0)) (checkAsmIsInteger (xs!!0)) (checkAsmIsPointer (xs!!0))
 
---Bool: Is2Values
-extractData :: String -> Bool -> Word16
-extractData s true = asmCombineValues 
-extractData s false = extractCmdfromSplitted (splitOnBlanc s)
+asmGetDataType :: String -> DataType
+asmGetDataType s 
+  | ((checkAsmIsInteger s) == True) = INT
+  | ((checkAsmIsPointer s) == True) = POINT
+  | ((checkAsmIsRegister s) == True) = REG
 
-asmGetInteger :: [[Char]] -> Integer
+asmGetData :: [[Char]] -> [(Integer, DataType)]
+asmGetData x
+  | ((checkAsmIs2Values x) == True) = [((asmExtractData x)!!0, asmGetDataType x!!1), ((asmExtractData x)!!1, asmGetDataType x!!2)]
+  | ((checkAsmIs2Values x) == False) = [((asmExtractData x)!!0, asmGetDataType x!!1)]
+
+-- get values
+asmGetRegister :: String -> Integer
+asmGetRegister = getRegIdByStr
+
+asmGetInteger :: String -> Integer
 asmGetInteger (x:xs) = read xs :: Integer
 
-asmGetPointer :: [[Char]] -> Integer
+asmGetPointer :: String -> Integer
 asmGetPointer x = read x :: Integer
 
+
+-- check
 checkAsmIs2Values :: [[Char]] -> Bool
-checkAsmIs2Values splitted = (length splitted) == 3
+checkAsmIs2Values splitted = (length splitted) == 2
 
 checkAsmIsInteger :: String -> Bool
 checkAsmIsInteger (x:xs) = x == '#' && isInteger xs
@@ -97,6 +117,7 @@ checkAsmIsRegister :: String -> Bool
 checkAsmIsRegister s = (getRegIdByStr s) >= 0
 
 
+-- byte-length-convert
 word8toWord16 :: Word8 -> Word16
 word8toWord16 x = fromIntegral x
 
@@ -106,26 +127,59 @@ word8toWord32 x = fromIntegral x
 word16toWord32 :: Word16 -> Word32
 word16toWord32 x = fromIntegral x
 
+word8toWord64 :: Word8 -> Word64
+word8toWord64 x = fromIntegral x
 
-asmAddCmd :: Word8 -> Word32
-asmAddCmd cmd = (word8toWord32 (cmd .&. 63)) `shiftL` 18 
+word16toWord64 :: Word16 -> Word64
+word16toWord64 x = fromIntegral x
 
-asmAddInfo :: Word32 -> Word8 -> Word32
-asmAddInfo bin info = bin .|. (word8toWord32 ((info .&. 7)) `shiftL` 15)
+word32toWord64 :: Word32 -> Word64
+word32toWord64 x = fromIntegral x
 
-asmAddValue :: Word32 -> Word16 -> Word32
-asmAddValue bin value = bin .|. (word16toWord32 ((value .&. 16383)))
+integerToWord8 :: Integer -> Word8
+integerToWord8 x = fromIntegral x
 
-asmBuild :: Word8 -> Word8 -> Word16 -> Word32
+integerToWord16 :: Integer -> Word16
+integerToWord16 x = fromIntegral x
+
+printBin :: (Show a, Integral a) => a -> String
+printBin x = showIntAtBase 2 Char.intToDigit x ""
+
+-- Building the Command-Bytes
+
+asmAddCmd :: Word8 -> Word64
+asmAddCmd cmd = (word8toWord64 (cmd .&. 63)) `shiftL` 34
+
+asmAddInfo :: Word64 -> Word8 -> Word64
+asmAddInfo bin info = bin .|. (word8toWord64 ((info .&. 3)) `shiftL` 32)
+
+asmAddValue :: Word64 -> Word32 -> Word64
+asmAddValue bin value = bin .|. (word32toWord64 (value))
+
+asmCombineValues :: Word16 -> Word16 -> Word32
+asmCombineValues valL valR = ((word16toWord32 (valL)) `shiftL` 16) .|. word16toWord32 (valR)
+
+asmBuild :: Word8 -> Word8 -> Word32 -> Word64
 asmBuild cmd info value = asmAddValue (asmAddInfo (asmAddCmd cmd) info) value
 
-asmBuildFrom2val :: Word8 -> Word8 -> Word8 -> Word8 -> Word32
-asmBuildFrom2val cmd info valL valR = asmAddValue (asmAddInfo (asmAddCmd cmd) info) (asmCombineValues valL valR)
-
-asmCombineValues :: Word8 -> Word8 -> Word16
-asmCombineValues valL valR = ((word8toWord16 (valL)) `shiftL` 8) .|. word8toWord16 (valR)
+asmBuildFrom2val :: Word8 -> Word8 -> Word16 -> Word16 -> Word64
+asmBuildFrom2val cmd info valL valR = asmBuid cmd info (asmCombineValues valL valR)
 
 
+-- alles zusammenbaun:
+--   
+asm_ :: Word8 -> [Integer] -> Word64
+asm_ cmd cmdData
+   | (cmd == (extractCmd "Ende")) = asmBuild cmd 0 0
+   | (cmd == (extractCmd "Mov"))  = asmBuild cmd 0 0
+   | (cmd == (extractCmd "MovDW")) = asmBuild cmd 0 0
+   | (cmd == (extractCmd "I++")) = asmBuild cmd 0 0
+   | (cmd == (extractCmd "I--")) = asmBuild cmd 0 0
+   | (cmd == (extractCmd "Print")) = asmBuild cmd 0 0
+
+
+-- 		CMD1 nochEinCmd? CMD2
+--asm :: String -> (Word64, Bool, Word64)
 
 
 main = do
