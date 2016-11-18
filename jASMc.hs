@@ -161,6 +161,10 @@ integerToWord32 x = fromIntegral x
 printBin :: (Show a, Integral a) => a -> String
 printBin x = showIntAtBase 2 Char.intToDigit x ""
 
+printAsm :: (Word64, Bool, Word64) -> String
+printAsm (x, True, z) = (printBin x) ++ (printBin z)
+printAsm (x, False, z) = printBin x
+
 -- Building the Command-Bytes
 
 asmAddCmd :: Word8 -> Word64
@@ -201,9 +205,9 @@ asm__ cmd is2 cmdData
    | (cmd == (extractCmd "I--") && is2 && ((dType (cmdData!!0)) == REG) && ((dType (cmdData!!1)) == REG)) = asmBuildFrom2val cmd 0 (integerToWord16 (d (cmdData!!0))) (integerToWord16 (d (cmdData!!1)))
 
    | (cmd == (extractCmd "PRINT") && (not is2) && ((dType (cmdData!!0)) == INT)) = asmBuild cmd 0 (integerToWord32 (d (cmdData!!0)))
-   | (cmd == (extractCmd "PRINT") && (not is2) && (dType (cmdData!!0)) == POINT)) = asmBuild cmd 1 (integerToWord32 (d (cmdData!!0)))
-   | (cmd == (extractCmd "PRINT") && (not is2) && (dType (cmdData!!0)) == POINT)) = asmBuild cmd 2 (integerToWord32 (d (cmdData!!0)))
-
+   | (cmd == (extractCmd "PRINT") && (not is2) && ((dType (cmdData!!0)) == REG)) = asmBuild cmd 1 (integerToWord32 (d (cmdData!!0)))
+   | (cmd == (extractCmd "PRINT") && (not is2) && ((dType (cmdData!!0)) == POINT)) = asmBuild cmd 2 (integerToWord32 (d (cmdData!!0)))
+   | True = asmBuild 0 0 0
 
 
 
@@ -217,6 +221,12 @@ asm :: String -> (Word64, Bool, Word64)
 asm input = asm_ (splitOnBlanc input)
 
 
+
+main :: IO ()
 main = do
-    --putStrLn (show(extractCmd "asf sdf asf sdf"))
-    putStrLn (show(getCmdIdByStr "I++"))
+  putStrLn "jASM-Befehl:"
+  line <- getLine
+  putStrLn (show (asm line))
+  putStrLn (printAsm (asm line))
+
+  main
