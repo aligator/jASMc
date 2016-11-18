@@ -33,9 +33,9 @@ getRegister s = Register (-1)
 getCommand :: String -> Command
 getCommand "EXIT" = Command 0
 getCommand "MOV" = Command 1
-getCommand "MDW" = Command 2
+getCommand "MOVDW" = Command 2
 getCommand "I++" = Command 3
-getCommand "I--" = Command 2
+getCommand "I--" = Command 4
 getCommand "PRINT" = Command 8
 getCommand s = Command (-1)
 
@@ -191,12 +191,11 @@ asm__ cmd is2 cmdData
    | (cmd == (extractCmd "MOV") && is2  && ((dType (cmdData!!0)) == REG) && ((dType (cmdData!!1)) == POINT)) = asmBuildFrom2val cmd 1 (integerToWord16 (d (cmdData!!0))) (integerToWord16 (d (cmdData!!1)))
    | (cmd == (extractCmd "MOV") && is2  && ((dType (cmdData!!0)) == POINT) && ((dType (cmdData!!1)) == REG)) = asmBuildFrom2val cmd 2 (integerToWord16 (d (cmdData!!0))) (integerToWord16 (d (cmdData!!1)))
    | (cmd == (extractCmd "MOV") && is2  && ((dType (cmdData!!0)) == REG) && ((dType (cmdData!!1)) == REG)) = asmBuildFrom2val cmd 3 (integerToWord16 (d (cmdData!!0))) (integerToWord16 (d (cmdData!!1)))
-   | (cmd == (extractCmd "MDW") && is2  && ((dType (cmdData!!0)) == REG) && ((dType (cmdData!!1)) == INT) && (d (cmdData!!0)) == (getRegIdByStr "ax")) = asmBuild cmd 1 (integerToWord32 (d (cmdData!!1)))
-   | (cmd == (extractCmd "I++")) = asmBuild cmd 0 0
-   | (cmd == (extractCmd "I--")) = asmBuild cmd 0 0
+   | (cmd == (extractCmd "MOVDW") && is2  && ((dType (cmdData!!0)) == INT) && ((dType (cmdData!!1)) == REG) && (d (cmdData!!0)) == (getRegIdByStr "ax")) = asmBuild cmd 0 (integerToWord32 (d (cmdData!!1)))
+   | (cmd == (extractCmd "MOVDW") && is2  && ((dType (cmdData!!0)) == INT) && ((dType (cmdData!!1)) == REG) && (d (cmdData!!0)) == (getRegIdByStr "ay")) = asmBuild cmd 1 (integerToWord32 (d (cmdData!!1)))
+   | (cmd == (extractCmd "I++") && ((dType (cmdData!!0)) == REG) && ((dType (cmdData!!1)) == REG)) = asmBuildFrom2val cmd 0 (integerToWord16 (d (cmdData!!0))) (integerToWord16 (d (cmdData!!1)))
+   | (cmd == (extractCmd "I--") && ((dType (cmdData!!0)) == REG) && ((dType (cmdData!!1)) == REG)) = asmBuildFrom2val cmd 0 (integerToWord16 (d (cmdData!!0))) (integerToWord16 (d (cmdData!!1)))
    | (cmd == (extractCmd "PRINT")) = asmBuild cmd 0 0
-
-
 
 -- asm_ (integerToWord8 (getCmdIdByStr "Mov")) True (asmGetData ["Mov", "#123", "a"])
 -- 		CMD1 doppelCmd? CMD2
