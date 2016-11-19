@@ -1,6 +1,10 @@
 import System.IO
+import System.Environment(getArgs)
+
 import qualified Data.List.Split as Split
 import qualified Data.Char as Char
+import qualified Data.ByteString as B
+import qualified Data.ByteString.Char8 as BC
 import Data.Bits
 import Data.Word
 import Numeric
@@ -11,6 +15,18 @@ data Register = Register {regId :: Integer}  deriving (Show,Eq)
 data Command = Command {cmdId :: Integer} deriving (Show,Eq) 
 data DataType = INT | REG | POINT deriving (Show, Eq)
 data Parameter = Parameter {d :: Integer, dType :: DataType} deriving (Show, Eq)
+
+data AsmCmd = AsmCmd {
+      b1 :: Word8,
+      b2 :: Word8,
+      b3 :: Word8,
+      b4 :: Word8,
+      b5 :: Word8
+} deriving (Show)
+
+data AsmData = AsmData {
+      asmData :: [AsmCmd]
+} deriving (Show)
 
 getRegister :: String -> Register
 getRegister "a" = Register 0
@@ -149,6 +165,9 @@ word16toWord64 x = fromIntegral x
 word32toWord64 :: Word32 -> Word64
 word32toWord64 x = fromIntegral x
 
+word64toWord8 :: Word64 -> Word8
+word64toWord8 x = fromIntegral x
+
 integerToWord8 :: Integer -> Word8
 integerToWord8 x = fromIntegral x
 
@@ -158,8 +177,18 @@ integerToWord16 x = fromIntegral x
 integerToWord32 :: Integer -> Word32
 integerToWord32 x = fromIntegral x
 
+-- Byte an der Position pos (0-7) in Word64 w
+getByteFromPos :: Word64 -> Int -> Word8
+getByteFromPos w pos = word64toWord8 (w `shiftR` (pos * 8))
+
+getAsmCmd :: Word64 -> AsmCmd
+getAsmCmd cmd = AsmCmd (getByteFromPos cmd 4) (getByteFromPos cmd 3) (getByteFromPos cmd 2) (getByteFromPos cmd 1) (getByteFromPos cmd 0)
+
 printBin :: (Show a, Integral a) => a -> String
 printBin x = showIntAtBase 2 Char.intToDigit x ""
+
+getAsm1 :: (Word64, Bool, Word64) -> Word64
+getAsm1 (x, y, z) = x
 
 printAsm :: (Word64, Bool, Word64) -> String
 printAsm (x, True, z) = (printBin x) ++ (printBin z)
@@ -220,13 +249,56 @@ asm_ input = (asm__ (integerToWord8 (getCmdIdByStr (input!!0))) (checkAsmIs2Valu
 asm :: String -> (Word64, Bool, Word64)
 asm input = asm_ (splitOnBlanc input)
 
+asmCmdList2asmData :: [AsmCmd] -> AsmData
+asmCmdList2asmData x = AsmData x
 
+asmCmd2ByteList :: AsmCmd -> [Word8]
+asmCmd2ByteList x = [b1 x, b2 x, b3 x, b4 x, b5 x]
+
+
+
+twoDimensionsTo1_ :: [[a]] -> [a] -> [a]
+twoDimensionsTo1_ [] y = y
+twoDimensionsTo1_ (x:xs) y = twoDimensionsTo1_ xs (y ++ x)
+
+twoDimensionsTo1 :: [[a]] -> [a]
+twoDimensionsTo1 x = twoDimensionsTo1_ x []
+
+
+asmDataToWord8List :: AsmData -> [Word8]
+asmDataToWord8List d = twoDimensionsTo1 (map asmCmd2ByteList (asmData d))
+
+asmDataToByteString :: [Word8] -> String -> B.ByteString
+asmDataToByteString d p =
+    B.concat [
+        BC.pack p
+      , B.pack (map fromIntegral d)
+    ]
 
 main :: IO ()
 main = do
-  putStrLn "jASM-Befehl:"
-  line <- getLine
-  putStrLn (show (asm line))
-  putStrLn (printAsm (asm line))
+  args <- getArgs
+  content <- readFile (args !! 0)
+  let asmLines = lines content
+ -- putStrLn(show asmLines) 
 
-  main
+  let prAsm s = printAsm (asm s)
+
+  let getAsmCmdFromString s = getAsmCmd (getAsm1 (asm s))
+ 
+  let asmData = asmCmdList2asmData (map getAsmCmdFromString asmLines)
+
+ --putStrLn(show(map prAsm asmLines))
+  --putStrLn(show(asmData))
+  --putStrLn(show(asmDataToWord8List asmData))
+
+ -- putStrLn(show(asmDataToByteString (asmDataToWord8List asmData) ""))
+ 
+
+  B.writeFile (args!!1) (asmDataToByteString (asmDataToWord8List asmData) "jASM1")
+--putStrLn "jASM-Befehl:"
+  --line <- getLine
+  --putStrLn (show (asm line))
+  --putStrLn (printAsm (asm line))
+
+  --main

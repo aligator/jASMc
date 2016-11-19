@@ -1,0 +1,5 @@
+MOV #1 a
+MOV #2 b
+I++ a b
+PRINT rx
+EXIT

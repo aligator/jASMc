@@ -1,3 +1,5 @@
 jasmc
-jASMc.hi
-jASMc.o
+*.hi
+*.o
+*~
+out.hex
