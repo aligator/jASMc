@@ -16,6 +16,7 @@ data Command = Command {cmdId :: Integer} deriving (Show,Eq)
 data DataType = INT | REG | POINT deriving (Show, Eq)
 data Parameter = Parameter {d :: Integer, dType :: DataType} deriving (Show, Eq)
 
+-- one comand in bytes (5 bytes)
 data AsmCmd = AsmCmd {
       b1 :: Word8,
       b2 :: Word8,
@@ -24,6 +25,7 @@ data AsmCmd = AsmCmd {
       b5 :: Word8
 } deriving (Show)
 
+-- list of commands
 data AsmData = AsmData {
       asmData :: [AsmCmd]
 } deriving (Show)
@@ -131,7 +133,7 @@ asmGetPointer x = read x :: Integer
 
 -- check
 
-                                --witch cmd?
+                                --with cmd (true) or only parameters (false)
 checkAsmIs2Values :: [[Char]] -> Bool -> Bool
 checkAsmIs2Values splitted True = (length splitted) == 3
 checkAsmIs2Values splitted False = (length splitted) == 2
