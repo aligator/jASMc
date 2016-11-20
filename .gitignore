@@ -2,4 +2,4 @@ jasmc
 *.hi
 *.o
 *~
-out.hex
+*.hex
