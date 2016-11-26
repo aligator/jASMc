@@ -1,6 +1,6 @@
 import System.IO
 import System.Environment(getArgs)
-
+import Control.Exception(assert)
 import qualified Data.List.Split as Split
 import qualified Data.Char as Char
 import qualified Data.ByteString as B
@@ -238,7 +238,7 @@ asm__ cmd is2 cmdData
    | (cmd == (extractCmd "PRINT") && (not is2) && ((dType (cmdData!!0)) == INT)) = asmBuild cmd 0 (integerToWord32 (d (cmdData!!0)))
    | (cmd == (extractCmd "PRINT") && (not is2) && ((dType (cmdData!!0)) == REG)) = asmBuild cmd 1 (integerToWord32 (d (cmdData!!0)))
    | (cmd == (extractCmd "PRINT") && (not is2) && ((dType (cmdData!!0)) == POINT)) = asmBuild cmd 2 (integerToWord32 (d (cmdData!!0)))
-   | True = asmBuild 0 0 0
+   | True = error ("CMD: " ++ (show cmd) ++ " two: " ++ (show is2) ++ " data " ++ (show cmdData))
 
 
 
@@ -282,25 +282,25 @@ main = do
   args <- getArgs
   content <- readFile (args !! 0)
   let asmLines = lines content
- -- putStrLn(show asmLines) 
 
   let prAsm s = printAsm (asm s)
 
   let getAsmCmdFromString s = getAsmCmd (getAsm1 (asm s))
  
   let asmData = asmCmdList2asmData (map getAsmCmdFromString asmLines)
-
+------------------------------------------------------------------
  --putStrLn(show(map prAsm asmLines))
   --putStrLn(show(asmData))
   --putStrLn(show(asmDataToWord8List asmData))
 
  -- putStrLn(show(asmDataToByteString (asmDataToWord8List asmData) ""))
  
-
+----------------------------------------------
   B.writeFile (args!!1) (asmDataToByteString (asmDataToWord8List asmData) "jASM1")
---putStrLn "jASM-Befehl:"
-  --line <- getLine
-  --putStrLn (show (asm line))
-  --putStrLn (printAsm (asm line))
+--main = do
+--  putStrLn "jASM-Befehl:"
+--  line <- getLine
+--  putStrLn (show (asm line))
+--  putStrLn (printAsm (asm line))
 
   --main
