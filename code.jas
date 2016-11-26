@@ -1,5 +1,14 @@
 MOV #1 a
-MOV #2 b
-I++ a b
+MOV a 1
+MOV #-2 a
+MOV a 2
+MOVDW #1048575 ax
+PRINT ax
+MOV #1 e
+I++ ax e
+PRINT rx
+MOV 1 ax
+MOV 2 bx
+I++ ax bx
 PRINT rx
 EXIT

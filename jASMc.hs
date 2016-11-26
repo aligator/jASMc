@@ -228,8 +228,8 @@ asm__ cmd is2 cmdData
    | (cmd == (extractCmd "MOV") && is2 && ((dType (cmdData!!0)) == POINT) && ((dType (cmdData!!1)) == REG)) = asmBuildFrom2val cmd 2 (integerToWord16 (d (cmdData!!0))) (integerToWord16 (d (cmdData!!1)))
    | (cmd == (extractCmd "MOV") && is2 && ((dType (cmdData!!0)) == REG) && ((dType (cmdData!!1)) == REG)) = asmBuildFrom2val cmd 3 (integerToWord16 (d (cmdData!!0))) (integerToWord16 (d (cmdData!!1)))
 
-   | (cmd == (extractCmd "MOVDW") && is2 && ((dType (cmdData!!0)) == INT) && ((dType (cmdData!!1)) == REG) && (d (cmdData!!0)) == (getRegIdByStr "ax")) = asmBuild cmd 0 (integerToWord32 (d (cmdData!!1)))
-   | (cmd == (extractCmd "MOVDW") && is2 && ((dType (cmdData!!0)) == INT) && ((dType (cmdData!!1)) == REG) && (d (cmdData!!0)) == (getRegIdByStr "bx")) = asmBuild cmd 1 (integerToWord32 (d (cmdData!!1)))
+   | (cmd == (extractCmd "MOVDW") && is2 && ((dType (cmdData!!0)) == INT) && ((dType (cmdData!!1)) == REG) && (d (cmdData!!1)) == (getRegIdByStr "ax")) = asmBuild cmd 0 (integerToWord32 (d (cmdData!!1)))
+   | (cmd == (extractCmd "MOVDW") && is2 && ((dType (cmdData!!0)) == INT) && ((dType (cmdData!!1)) == REG) && (d (cmdData!!1)) == (getRegIdByStr "bx")) = asmBuild cmd 1 (integerToWord32 (d (cmdData!!1)))
 
    | (cmd == (extractCmd "I++") && is2 && ((dType (cmdData!!0)) == REG) && ((dType (cmdData!!1)) == REG)) = asmBuildFrom2val cmd 0 (integerToWord16 (d (cmdData!!0))) (integerToWord16 (d (cmdData!!1)))
 
