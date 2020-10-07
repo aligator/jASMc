@@ -22,4 +22,6 @@ EXIT
 
 Into a byte code which I invented myself...
 
+[I also created an interpreter in java.](https://github.com/aligator/jASM)  
+
 The Problem is that I have no exact documentation anymore about how the bytecode looks like...
