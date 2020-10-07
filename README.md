@@ -24,6 +24,6 @@ Into a byte code which I invented myself...
 
 [I also created an interpreter in java.](https://github.com/aligator/jASM)  
 
-The Problem is that I have no exact documentation anymore about how the bytecode looks like...
+[The Problem is that I have a docu about the bytecode only in german and as .odt file (why^^)](https://github.com/aligator/jASM/blob/master/jASM-Bytecode-Interpreter/doc/jASM-description.odt)
 
 related: https://github.com/aligator/jAsmInt
